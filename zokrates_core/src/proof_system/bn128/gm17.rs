@@ -107,7 +107,7 @@ impl ProofSystem for GM17 {
         }
     }
 
-    fn export_solidity_verifier(&self, reader: BufReader<File>, is_abiv2: bool) -> String {
+    fn export_solidity_verifier(&self, contract_name: &str, reader: BufReader<File>, is_abiv2: bool) -> String;
         let mut lines = reader.lines();
 
         let (mut template_text, solidity_pairing_lib) = if is_abiv2 {
@@ -131,6 +131,7 @@ impl ProofSystem for GM17 {
         let vk_query_points_regex = Regex::new(r#"points"#).unwrap();
         let vk_query_repeat_regex = Regex::new(r#"(<%vk_query_pts%>)"#).unwrap();
         let vk_input_len_regex = Regex::new(r#"(<%vk_input_length%>)"#).unwrap();
+        let contract_name_regex = Regex::new(r#"(<%contract_name%>)"#).unwrap();
 
         for _ in 0..5 {
             let current_line: String = lines
@@ -159,6 +160,12 @@ impl ProofSystem for GM17 {
             .replace(
                 template_text.as_str(),
                 format!("{}", query_count - 1).as_str(),
+            )
+            .into_owned();
+        template_text = contract_name_regex
+            .replace(
+                template_text.as_str(),
+                format!("{}", contract_name).as_str(),
             )
             .into_owned();
 
@@ -196,8 +203,8 @@ impl ProofSystem for GM17 {
     }
 }
 
-const CONTRACT_TEMPLATE_V2: &str = r#"
-contract Verifier {
+const CONTRACT_TEMPLATE: &str = r#"
+contract <%contract_name%> {
     using Pairing for *;
     struct VerifyingKey {
         Pairing.G2Point h;
@@ -264,7 +271,7 @@ contract Verifier {
 "#;
 
 const CONTRACT_TEMPLATE: &str = r#"
-contract Verifier {
+contract <%contract_name%> {
     using Pairing for *;
     struct VerifyingKey {
         Pairing.G2Point h;

@@ -57,7 +57,7 @@ impl ProofSystem for G16 {
         true
     }
 
-    fn export_solidity_verifier(&self, reader: BufReader<File>, is_abiv2: bool) -> String {
+    fn export_solidity_verifier(&self, contract_name: &str, reader: BufReader<File>, is_abiv2: bool) -> String {
         let mut lines = reader.lines();
 
         let (mut template_text, solidity_pairing_lib) = if is_abiv2 {
@@ -81,6 +81,7 @@ impl ProofSystem for G16 {
         let vk_gamma_abc_points_regex = Regex::new(r#"points"#).unwrap();
         let vk_gamma_abc_repeat_regex = Regex::new(r#"(<%vk_gamma_abc_pts%>)"#).unwrap();
         let vk_input_len_regex = Regex::new(r#"(<%vk_input_length%>)"#).unwrap();
+        let contract_name_regex = Regex::new(r#"(<%contract_name%>)"#).unwrap();
 
         for _ in 0..4 {
             let current_line: String = lines
@@ -112,6 +113,12 @@ impl ProofSystem for G16 {
             .replace(
                 template_text.as_str(),
                 format!("{}", gamma_abc_count - 1).as_str(),
+            )
+            .into_owned();
+        template_text = contract_name_regex
+            .replace(
+                template_text.as_str(),
+                format!("{}", contract_name).as_str(),
             )
             .into_owned();
 
@@ -202,7 +209,7 @@ mod serialize {
 }
 
 const CONTRACT_TEMPLATE_V2: &str = r#"
-contract Verifier {
+contract <%contract_name%> {
     using Pairing for *;
     struct VerifyingKey {
         Pairing.G1Point a;
@@ -262,7 +269,7 @@ contract Verifier {
 "#;
 
 const CONTRACT_TEMPLATE: &str = r#"
-contract Verifier {
+contract <%contract_name%> {
     using Pairing for *;
     struct VerifyingKey {
         Pairing.G1Point a;

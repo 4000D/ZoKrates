@@ -45,6 +45,7 @@ fn cli() -> Result<(), String> {
     const VERIFICATION_KEY_DEFAULT_PATH: &str = "verification.key";
     const PROVING_KEY_DEFAULT_PATH: &str = "proving.key";
     const VERIFICATION_CONTRACT_DEFAULT_PATH: &str = "verifier.sol";
+    const VERIFICATION_CONTRACT_DEFAULT_NAME: &str = "Verifier";
     const WITNESS_DEFAULT_PATH: &str = "witness";
     const JSON_PROOF_PATH: &str = "proof.json";
     let default_scheme = env::var("ZOKRATES_PROVING_SCHEME").unwrap_or(String::from("g16"));
@@ -141,6 +142,14 @@ fn cli() -> Result<(), String> {
             .takes_value(true)
             .required(false)
             .default_value(VERIFICATION_CONTRACT_DEFAULT_PATH)
+        ).arg(Arg::with_name("contract-name")
+            .short("c")
+            .long("contract-name")
+            .help("Name of verifier contract")
+            .value_name("NAME")
+            .takes_value(true)
+            .required(false)
+            .default_value(VERIFICATION_CONTRACT_DEFAULT_NAME)
         ).arg(Arg::with_name("proving-scheme")
             .short("s")
             .long("proving-scheme")
@@ -437,7 +446,8 @@ fn cli() -> Result<(), String> {
                     .map_err(|why| format!("couldn't open {}: {}", input_path.display(), why))?;
                 let reader = BufReader::new(input_file);
 
-                let verifier = scheme.export_solidity_verifier(reader, is_abiv2);
+                let contract_name = sub_matches.value_of("contract-name").unwrap();
+                let verifier = scheme.export_solidity_verifier(contract_name, reader, is_abiv2);
 
                 //write output file
                 let output_path = Path::new(sub_matches.value_of("output").unwrap());
